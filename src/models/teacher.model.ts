@@ -1,6 +1,18 @@
-import mongoose, { Schema, model, models } from "mongoose";
+import mongoose, { Document, Schema, model, models } from "mongoose";
 
-const TeacherSchema = new Schema(
+// 1. Define TypeScript Interface for Type Safety
+export interface ITeacher extends Document {
+  name: string;
+  address: string;
+  educationalDetail: string;
+  description?: string;
+  profile_url: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+// 2. Define the Mongoose Schema
+const TeacherSchema = new Schema<ITeacher>(
   {
     name: {
       type: String,
@@ -20,11 +32,12 @@ const TeacherSchema = new Schema(
     },
     profile_url: {
       type: String,
-      required: true,
+      // required: true,
     },
   },
-  { timestamps: true }
+  { timestamps: true } // Adds createdAt and updatedAt
 );
 
-const Teacher = models.Teacher || model("Teacher", TeacherSchema);
+// 3. Export the model
+const Teacher = models.Teacher || model<ITeacher>("Teacher", TeacherSchema);
 export default Teacher;

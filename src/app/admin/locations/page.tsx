@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogTrigger,
@@ -19,9 +19,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  getLocations,
+  createLocation,
+  updateLocation,
+  deleteLocation,
+} from "@/services/locationService";
+import { toast } from "sonner";
 
 interface Location {
-  id: string;
+  _id: string;
   address: string;
   fullName: string;
   shortName: string;
@@ -38,40 +45,68 @@ export default function LocationManager() {
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  const handleAdd = () => {
-    setLocations((prev) => [
-      ...prev,
-      { ...newLocation, id: Date.now().toString() },
-    ]);
-    setNewLocation({ address: "", fullName: "", shortName: "" });
-    setModalOpen(false);
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const data = await getLocations();
+        setLocations(data);
+      } catch (err) {
+        toast.error("Failed to load locations");
+      }
+    };
+    fetchLocations();
+  }, []);
+
+  const handleAdd = async () => {
+    try {
+      const newLoc = await createLocation(newLocation);
+      setLocations((prev) => [...prev, newLoc]);
+      toast.success("Location added");
+    } catch {
+      toast.error("Failed to add location");
+    } finally {
+      setModalOpen(false);
+      setNewLocation({ address: "", fullName: "", shortName: "" });
+    }
   };
 
-  const handleDelete = () => {
-    if (deleteConfirmId) {
-      setLocations((prev) => prev.filter((loc) => loc.id !== deleteConfirmId));
+  const handleDelete = async () => {
+    if (!deleteConfirmId) return;
+    try {
+      await deleteLocation(deleteConfirmId);
+      setLocations((prev) => prev.filter((loc) => loc._id !== deleteConfirmId));
+      toast.success("Deleted successfully");
+    } catch {
+      toast.error("Deletion failed");
+    } finally {
       setDeleteConfirmId(null);
     }
   };
 
-  const handleEdit = (id: string) => {
-    const loc = locations.find((l) => l.id === id);
+  const handleEdit = (_id: string) => {
+    const loc = locations.find((l) => l._id === _id);
     if (loc) {
       setNewLocation({ ...loc });
-      setEditingId(id);
+      setEditingId(_id);
       setModalOpen(true);
     }
   };
 
-  const handleSave = () => {
-    setLocations((prev) =>
-      prev.map((loc) =>
-        loc.id === editingId ? { ...loc, ...newLocation } : loc
-      )
-    );
-    setNewLocation({ address: "", fullName: "", shortName: "" });
-    setEditingId(null);
-    setModalOpen(false);
+  const handleSave = async () => {
+    if (!editingId) return;
+    try {
+      const updatedLoc = await updateLocation(editingId, newLocation);
+      setLocations((prev) =>
+        prev.map((loc) => (loc._id === editingId ? updatedLoc : loc))
+      );
+      toast.success("Location updated");
+    } catch {
+      toast.error("Update failed");
+    } finally {
+      setEditingId(null);
+      setNewLocation({ address: "", fullName: "", shortName: "" });
+      setModalOpen(false);
+    }
   };
 
   return (
@@ -164,29 +199,30 @@ export default function LocationManager() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {locations.map((loc) => (
-              <TableRow key={loc.id}>
-                <TableCell>{loc.fullName}</TableCell>
-                <TableCell>{loc.shortName}</TableCell>
-                <TableCell>{loc.address}</TableCell>
-                <TableCell className="px-6 py-4 flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleEdit(loc.id)}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => setDeleteConfirmId(loc.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
+            {locations.length > 0 &&
+              locations.map((loc) => (
+                <TableRow key={loc._id}>
+                  <TableCell>{loc.fullName}</TableCell>
+                  <TableCell>{loc.shortName}</TableCell>
+                  <TableCell>{loc.address}</TableCell>
+                  <TableCell className="px-6 py-4 flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleEdit(loc._id)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => setDeleteConfirmId(loc._id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
           </TableBody>
         </Table>
       </div>
