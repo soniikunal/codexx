@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -19,23 +19,53 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Pencil, Trash2 } from "lucide-react";
+import axios from "@/lib/axios";
+import { toast } from "sonner";
+import { z } from "zod";
 
 interface Testimonial {
   name: string;
   rating: string;
   testimonial: string;
+  _id: string;
 }
 
 export default function ParentTestimonialsManager() {
+  const testimonialSchema = z.object({
+    name: z.string().min(1, "Name is required"),
+    rating: z.string().refine((val) => /^[1-5]$/.test(val), {
+      message: "Rating must be a number between 1 and 5",
+    }),
+    testimonial: z.string().min(1, "Testimonial is required"),
+  });
+  type TestimonialForm = z.infer<typeof testimonialSchema>;
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [form, setForm] = useState<Testimonial>({
+  const [editIndex, setEditIndex] = useState<number | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [form, setForm] = useState<TestimonialForm>({
     name: "",
     rating: "",
     testimonial: "",
   });
-  const [editIndex, setEditIndex] = useState<number | null>(null);
+
+  const [formErrors, setFormErrors] = useState<
+    Partial<Record<keyof TestimonialForm, string>>
+  >({});
+
+  useEffect(() => {
+    fetchTestimonials();
+  }, []);
+
+  const fetchTestimonials = async () => {
+    try {
+      const res = await axios.get("/testimonials");
+      setTestimonials(res.data);
+    } catch (err) {
+      toast.error("Failed to load testimonials");
+    }
+  };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -43,16 +73,35 @@ export default function ParentTestimonialsManager() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = () => {
-    if (editIndex !== null) {
-      const updated = [...testimonials];
-      updated[editIndex] = form;
-      setTestimonials(updated);
-    } else {
-      setTestimonials([...testimonials, form]);
+  const handleSubmit = async () => {
+    const result = testimonialSchema.safeParse(form);
+    if (!result.success) {
+      const fieldErrors: Partial<Record<keyof TestimonialForm, string>> = {};
+      result.error.errors.forEach((err) => {
+        const field = err.path[0] as keyof TestimonialForm;
+        fieldErrors[field] = err.message;
+      });
+      setFormErrors(fieldErrors);
+      toast.error("Please fix form errors");
+      return;
     }
-    setModalOpen(false);
-    resetForm();
+
+    try {
+      if (editIndex !== null) {
+        const id = testimonials[editIndex]._id;
+        await axios.put(`/testimonials/${id}`, form);
+        toast.success("Testimonial updated");
+      } else {
+        await axios.post("/testimonials", form);
+        toast.success("Testimonial added");
+      }
+      fetchTestimonials();
+      setModalOpen(false);
+      resetForm();
+      setFormErrors({});
+    } catch (err) {
+      toast.error("Error saving testimonial");
+    }
   };
 
   const handleEdit = (index: number) => {
@@ -61,18 +110,22 @@ export default function ParentTestimonialsManager() {
     setModalOpen(true);
   };
 
-  const handleDelete = () => {
-    if (editIndex !== null) {
-      const updated = testimonials.filter((_, i) => i !== editIndex);
-      setTestimonials(updated);
+  const handleDelete = async () => {
+    try {
+      if (!deleteConfirmId) return;
+      await axios.delete(`/testimonials/${deleteConfirmId}`);
+      toast.success("Testimonial deleted");
+      fetchTestimonials();
       setDeleteModalOpen(false);
-      resetForm();
+    } catch (err) {
+      toast.error("Failed to delete testimonial");
     }
   };
 
   const resetForm = () => {
     setForm({ name: "", rating: "", testimonial: "" });
     setEditIndex(null);
+    setFormErrors({});
   };
 
   return (
@@ -109,7 +162,7 @@ export default function ParentTestimonialsManager() {
                     size="sm"
                     variant="destructive"
                     onClick={() => {
-                      setEditIndex(index);
+                      setDeleteConfirmId(testimonial._id);
                       setDeleteModalOpen(true);
                     }}
                   >
@@ -131,28 +184,49 @@ export default function ParentTestimonialsManager() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <Input
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              placeholder="Full Name"
-              required
-            />
-            <Input
-              name="rating"
-              value={form.rating}
-              onChange={handleChange}
-              placeholder="Rating (1-5)"
-              required
-            />
-            <Textarea
-              name="testimonial"
-              value={form.testimonial}
-              onChange={handleChange}
-              placeholder="Testimonial"
-              required
-            />
+            <div>
+              <Input
+                name="name"
+                value={form.name}
+                onChange={handleChange}
+                placeholder="Full Name"
+                required
+              />
+              {formErrors.name && (
+                <p className="text-sm text-red-500">{formErrors.name}</p>
+              )}
+            </div>
+
+            <div>
+              <Input
+                name="rating"
+                value={form.rating}
+                onChange={(e) => {
+                  setForm({ ...form, rating: e.target.value });
+                  setFormErrors((prev) => ({ ...prev, rating: undefined }));
+                }}
+                placeholder="Rating (1-5)"
+                required
+              />
+              {formErrors.rating && (
+                <p className="text-sm text-red-500">{formErrors.rating}</p>
+              )}
+            </div>
+
+            <div>
+              <Textarea
+                name="testimonial"
+                value={form.testimonial}
+                onChange={handleChange}
+                placeholder="Testimonial"
+                required
+              />
+              {formErrors.testimonial && (
+                <p className="text-sm text-red-500">{formErrors.testimonial}</p>
+              )}
+            </div>
           </div>
+
           <DialogFooter className="mt-4">
             <Button onClick={handleSubmit}>
               {editIndex !== null ? "Update" : "Add"}

@@ -44,7 +44,6 @@ interface Schedule {
 
 interface Program {
   pk: string;
-  sk: string;
   courseName: string;
   ageRange: string;
   description: string;
@@ -91,7 +90,6 @@ export default function ProgramManager() {
 
   const initializeProgram = (): Program => ({
     pk: "PROG_CODING",
-    sk: "",
     courseName: "",
     ageRange: "",
     description: "",
@@ -131,7 +129,7 @@ export default function ProgramManager() {
               Add Program
             </Button>
           </DialogTrigger>
-          <DialogContent className="">
+          <DialogContent className="w-full max-w-[calc(100%-2rem)] sm:max-w-2xl md:max-w-4xl lg:max-w-5xl">
             <DialogHeader>
               <DialogTitle>
                 {editingIndex !== null ? "Edit Program" : "Add Program"}
@@ -154,16 +152,6 @@ export default function ProgramManager() {
                       <option key={option}>{option}</option>
                     ))}
                   </select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Course Key (sk)</Label>
-                  <Input
-                    value={modalProgram.sk}
-                    onChange={(e) =>
-                      setModalProgram({ ...modalProgram, sk: e.target.value })
-                    }
-                  />
                 </div>
 
                 <div className="space-y-2">
@@ -247,32 +235,6 @@ export default function ProgramManager() {
                   />
                 </div>
 
-                <div className="space-y-2 col-span-2">
-                  <Label>Description</Label>
-                  <Textarea
-                    value={modalProgram.description}
-                    onChange={(e) =>
-                      setModalProgram({
-                        ...modalProgram,
-                        description: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Thumbnail Image URL</Label>
-                  <Input
-                    value={modalProgram.thumbnailImage}
-                    onChange={(e) =>
-                      setModalProgram({
-                        ...modalProgram,
-                        thumbnailImage: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-
                 <div className="space-y-2">
                   <Label>Program</Label>
                   <Input
@@ -324,25 +286,92 @@ export default function ProgramManager() {
                 {/* Boolean Fields */}
                 <div className="space-y-2">
                   <Label>In Person (Y/N)</Label>
-                  <Input
-                    value={modalProgram.inPerson}
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        value="true"
+                        checked={modalProgram.inPerson === "true"}
+                        onChange={(e) =>
+                          setModalProgram({
+                            ...modalProgram,
+                            inPerson: e.target.value,
+                          })
+                        }
+                      />
+                      Y
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        value="false"
+                        checked={modalProgram.inPerson === "false"}
+                        onChange={(e) =>
+                          setModalProgram({
+                            ...modalProgram,
+                            inPerson: e.target.value,
+                          })
+                        }
+                      />
+                      N
+                    </label>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Remote (Y/N)</Label>
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        value="true"
+                        checked={modalProgram.remote === "true"}
+                        onChange={(e) =>
+                          setModalProgram({
+                            ...modalProgram,
+                            remote: e.target.value,
+                          })
+                        }
+                      />
+                      Y
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        value="false"
+                        checked={modalProgram.remote === "false"}
+                        onChange={(e) =>
+                          setModalProgram({
+                            ...modalProgram,
+                            remote: e.target.value,
+                          })
+                        }
+                      />
+                      N
+                    </label>
+                  </div>
+                </div>
+
+                <div className="space-y-2 col-span-2">
+                  <Label>Description</Label>
+                  <Textarea
+                    value={modalProgram.description}
                     onChange={(e) =>
                       setModalProgram({
                         ...modalProgram,
-                        inPerson: e.target.value,
+                        description: e.target.value,
                       })
                     }
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Remote (Y/N)</Label>
+                  <Label>Thumbnail Image URL</Label>
                   <Input
-                    value={modalProgram.remote}
+                    value={modalProgram.thumbnailImage}
                     onChange={(e) =>
                       setModalProgram({
                         ...modalProgram,
-                        remote: e.target.value,
+                        thumbnailImage: e.target.value,
                       })
                     }
                   />
@@ -439,7 +468,7 @@ export default function ProgramManager() {
                   <Label className="font-semibold">Schedule</Label>
                   {Object.entries(modalProgram.schedule).map(([day, slots]) => (
                     <div key={day} className="mb-3">
-                      <Label>{day}</Label>
+                      <Label className="mb-3">{day}</Label>
                       {slots.map((slot, idx) => (
                         <div key={idx} className="grid grid-cols-3 gap-2 mb-2">
                           <div className="space-y-1">
