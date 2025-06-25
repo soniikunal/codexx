@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,8 +20,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { toast } from "sonner";
+import api from "@/lib/axios";
 
 interface Teacher {
+  _id?: string;
   name: string;
   profile_url: string;
   address: string;
@@ -30,40 +33,53 @@ interface Teacher {
 }
 
 export default function TeacherManager() {
-  const [teachers, setTeachers] = useState<Teacher[]>([
-    {
-      name: "Subrata Chandra",
-      profile_url: "https://codex-new.s3.amazonaws.com/Subrata.jpg",
-      address: "address",
-      educationalDetail: "Phd, Chemistry",
-      description: "",
-    },
-  ]);
-
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [modalTeacher, setModalTeacher] = useState<Teacher | null>(null);
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [confirmDeleteIndex, setConfirmDeleteIndex] = useState<number | null>(
-    null
-  );
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-  const handleSave = () => {
-    if (modalTeacher) {
-      if (editingIndex !== null) {
-        const updated = [...teachers];
-        updated[editingIndex] = modalTeacher;
-        setTeachers(updated);
-      } else {
-        setTeachers([...teachers, modalTeacher]);
-      }
+  useEffect(() => {
+    fetchTeachers();
+  }, []);
+
+  const fetchTeachers = async () => {
+    try {
+      const res = await api.get("/teacher");
+      setTeachers(res.data);
+    } catch (err) {
+      toast.error("Failed to fetch teachers");
     }
-    setModalTeacher(null);
-    setEditingIndex(null);
   };
 
-  const handleDelete = () => {
-    if (confirmDeleteIndex !== null) {
-      setTeachers(teachers.filter((_, i) => i !== confirmDeleteIndex));
-      setConfirmDeleteIndex(null);
+  const handleSave = async () => {
+    if (!modalTeacher) return;
+
+    try {
+      if (editingId) {
+        const res = await api.put(`/teacher/${editingId}`, modalTeacher);
+        toast.success("Teacher updated");
+      } else {
+        const res = await api.post("/teacher", modalTeacher);
+        toast.success("Teacher added");
+      }
+      setModalTeacher(null);
+      setEditingId(null);
+      fetchTeachers();
+    } catch (err) {
+      toast.error("Operation failed");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirmDeleteId) return;
+
+    try {
+      await api.delete(`/teacher/${confirmDeleteId}`);
+      toast.success("Teacher deleted");
+      setConfirmDeleteId(null);
+      fetchTeachers();
+    } catch (err) {
+      toast.error("Failed to delete teacher");
     }
   };
 
@@ -82,7 +98,7 @@ export default function TeacherManager() {
                   educationalDetail: "",
                   description: "",
                 });
-                setEditingIndex(null);
+                setEditingId(null);
               }}
             >
               Add Teacher
@@ -91,10 +107,10 @@ export default function TeacherManager() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
-                {editingIndex !== null ? "Edit Teacher" : "Add Teacher"}
+                {editingId ? "Edit Teacher" : "Add Teacher"}
               </DialogTitle>
             </DialogHeader>
-            <form className="space-y-4">
+            <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
               <Input
                 placeholder="Name"
                 value={modalTeacher?.name || ""}
@@ -116,7 +132,10 @@ export default function TeacherManager() {
                 placeholder="Address"
                 value={modalTeacher?.address || ""}
                 onChange={(e) =>
-                  setModalTeacher({ ...modalTeacher!, address: e.target.value })
+                  setModalTeacher({
+                    ...modalTeacher!,
+                    address: e.target.value,
+                  })
                 }
               />
               <Input
@@ -159,11 +178,9 @@ export default function TeacherManager() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {teachers.map((teacher, index) => (
-              <TableRow key={index} className="border-b">
-                <TableCell className="p-2 font-medium">
-                  {teacher.name}
-                </TableCell>
+            {teachers.map((teacher) => (
+              <TableRow key={teacher._id}>
+                <TableCell>{teacher.name}</TableCell>
                 <TableCell>
                   <img
                     src={teacher.profile_url}
@@ -173,13 +190,13 @@ export default function TeacherManager() {
                 </TableCell>
                 <TableCell>{teacher.address}</TableCell>
                 <TableCell>{teacher.educationalDetail}</TableCell>
-                <TableCell className="p-2 flex gap-2">
+                <TableCell className="flex gap-2">
                   <Button
                     variant="outline"
                     size="icon"
                     onClick={() => {
-                      setEditingIndex(index);
                       setModalTeacher(teacher);
+                      setEditingId(teacher._id || null);
                     }}
                   >
                     <Pencil className="w-4 h-4" />
@@ -187,7 +204,7 @@ export default function TeacherManager() {
                   <Button
                     variant="destructive"
                     size="icon"
-                    onClick={() => setConfirmDeleteIndex(index)}
+                    onClick={() => setConfirmDeleteId(teacher._id || null)}
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -198,21 +215,18 @@ export default function TeacherManager() {
         </Table>
       </div>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Confirmation */}
       <Dialog
-        open={confirmDeleteIndex !== null}
-        onOpenChange={() => setConfirmDeleteIndex(null)}
+        open={confirmDeleteId !== null}
+        onOpenChange={() => setConfirmDeleteId(null)}
       >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Confirm Deletion</DialogTitle>
           </DialogHeader>
-          <p>Are you sure you want to delete TableHeadis teacher?</p>
+          <p>Are you sure you want to delete this teacher?</p>
           <div className="flex justify-end gap-2 mt-4">
-            <Button
-              variant="outline"
-              onClick={() => setConfirmDeleteIndex(null)}
-            >
+            <Button variant="outline" onClick={() => setConfirmDeleteId(null)}>
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleDelete}>
