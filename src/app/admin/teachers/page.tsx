@@ -35,6 +35,7 @@ interface Teacher {
 
 export default function TeacherManager() {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [file, setFile] = useState<File | null>(null);
   const [modalTeacher, setModalTeacher] = useState<
     Omit<Teacher, "profile_url">
   >({
@@ -46,6 +47,7 @@ export default function TeacherManager() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   const fetchTeachers = async () => {
     try {
@@ -60,29 +62,45 @@ export default function TeacherManager() {
     fetchTeachers();
   }, []);
 
-  const handleSave = async () => {
-    debugger;
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!file) {
+      alert("Please select a file first!");
+      return;
+    }
     const formData = new FormData();
     formData.append("name", modalTeacher.name);
     formData.append("address", modalTeacher.address);
     formData.append("educationalDetail", modalTeacher.educationalDetail);
     formData.append("description", modalTeacher.description);
-    if (fileInputRef.current?.files?.[0]) {
-      formData.append("photo", fileInputRef.current.files[0]);
+    if (file) {
+      formData.append("photo", file);
     }
-
     try {
       if (editingId) {
-        // Update - optional in future
+        const res = await axios.put(`/teacher/${editingId}`, formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+        // setTeachers((prev) =>
+        //   prev.map((t) => (t._id === editingId ? res.data : t))
+        // );
+        toast.success("Teacher updated");
       } else {
-        const res = await axios.post("/teacher", formData);
-        setTeachers((prev) => [...prev, res.data]);
+        const res = await axios.post("/teacher", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+        // setTeachers((prev) => [...prev, res.data]);
         toast.success("Teacher added");
       }
     } catch (err) {
       toast.error("Failed to save teacher");
     } finally {
       resetModal();
+      fetchTeachers();
     }
   };
 
@@ -90,12 +108,13 @@ export default function TeacherManager() {
     if (!confirmDeleteId) return;
     try {
       await axios.delete(`/teacher/${confirmDeleteId}`);
-      setTeachers((prev) => prev.filter((t) => t._id !== confirmDeleteId));
+      // setTeachers((prev) => prev.filter((t) => t._id !== confirmDeleteId));
       toast.success("Teacher deleted");
     } catch (err) {
       toast.error("Failed to delete teacher");
     } finally {
       setConfirmDeleteId(null);
+      fetchTeachers();
     }
   };
 
@@ -106,15 +125,17 @@ export default function TeacherManager() {
       educationalDetail: "",
       description: "",
     });
+    setFile(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
     setEditingId(null);
+    setModalOpen(false);
   };
 
   return (
     <div className="p-4">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-xl font-bold">Manage Teachers</h1>
-        <Dialog>
+        <Dialog open={modalOpen} onOpenChange={setModalOpen}>
           <DialogTrigger asChild>
             <Button
               onClick={() => {
@@ -126,14 +147,58 @@ export default function TeacherManager() {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add Teacher</DialogTitle>
+              <DialogTitle>
+                {editingId ? "Edit Teacher" : "Add Teacher"}
+              </DialogTitle>
             </DialogHeader>
-            <AddTeacherForm
-              onAdd={(teacher) => {
-                setTeachers((prev) => [...prev, teacher]);
-                toast.success("Teacher added");
-              }}
-            />
+            <form className="space-y-4" encType="multipart/form-data">
+              <Input
+                placeholder="Name"
+                value={modalTeacher.name}
+                onChange={(e) =>
+                  setModalTeacher({ ...modalTeacher, name: e.target.value })
+                }
+              />
+              <Input
+                placeholder="Address"
+                value={modalTeacher.address}
+                onChange={(e) =>
+                  setModalTeacher({ ...modalTeacher, address: e.target.value })
+                }
+              />
+              <Input
+                placeholder="Educational Detail"
+                value={modalTeacher.educationalDetail}
+                onChange={(e) =>
+                  setModalTeacher({
+                    ...modalTeacher,
+                    educationalDetail: e.target.value,
+                  })
+                }
+              />
+              <Textarea
+                placeholder="Description"
+                value={modalTeacher.description}
+                onChange={(e) =>
+                  setModalTeacher({
+                    ...modalTeacher,
+                    description: e.target.value,
+                  })
+                }
+              />
+              <input
+                type="file"
+                name="photo"
+                className="block"
+                onChange={(e) => {
+                  const selected = e.target.files?.[0];
+                  if (selected) setFile(selected);
+                }}
+              />
+              <Button type="button" onClick={handleSave}>
+                {editingId ? "Update" : "Save"}
+              </Button>
+            </form>
           </DialogContent>
         </Dialog>
       </div>
@@ -163,7 +228,22 @@ export default function TeacherManager() {
                 <TableCell>{teacher.address}</TableCell>
                 <TableCell>{teacher.educationalDetail}</TableCell>
                 <TableCell className="flex gap-2">
-                  {/* You can enable editing later */}
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={() => {
+                      setModalTeacher({
+                        name: teacher.name,
+                        address: teacher.address,
+                        educationalDetail: teacher.educationalDetail,
+                        description: teacher.description,
+                      });
+                      setEditingId(teacher._id!);
+                      setModalOpen(true);
+                    }}
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
                   <Button
                     size="icon"
                     variant="destructive"
@@ -178,7 +258,6 @@ export default function TeacherManager() {
         </Table>
       </div>
 
-      {/* Delete Confirmation */}
       <Dialog
         open={!!confirmDeleteId}
         onOpenChange={() => setConfirmDeleteId(null)}
