@@ -26,6 +26,7 @@ import {
   deleteLocation,
 } from "@/services/locationService";
 import { toast } from "sonner";
+import { z } from "zod";
 
 interface Location {
   _id: string;
@@ -33,14 +34,22 @@ interface Location {
   fullName: string;
   shortName: string;
 }
-
+const locationSchema = z.object({
+  fullName: z.string().min(1, "Full Name is required"),
+  shortName: z.string().min(1, "Short Name is required"),
+  address: z.string().min(1, "Address is required"),
+});
 export default function LocationManager() {
+  type LocationForm = z.infer<typeof locationSchema>;
   const [locations, setLocations] = useState<Location[]>([]);
   const [newLocation, setNewLocation] = useState({
     address: "",
     fullName: "",
     shortName: "",
   });
+  const [formErrors, setFormErrors] = useState<
+    Partial<Record<keyof LocationForm, string>>
+  >({});
   const [editingId, setEditingId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -58,8 +67,20 @@ export default function LocationManager() {
   }, []);
 
   const handleAdd = async () => {
+    const result = locationSchema.safeParse(newLocation);
+    debugger;
+    if (!result.success) {
+      const errors: Partial<Record<keyof LocationForm, string>> = {};
+      result.error.errors.forEach((err) => {
+        errors[err.path[0] as keyof LocationForm] = err.message;
+      });
+
+      setFormErrors(errors);
+      return;
+    }
+
     try {
-      const newLoc = await createLocation(newLocation);
+      const newLoc = await createLocation(result.data);
       setLocations((prev) => [...prev, newLoc]);
       toast.success("Location added");
     } catch {
@@ -67,6 +88,7 @@ export default function LocationManager() {
     } finally {
       setModalOpen(false);
       setNewLocation({ address: "", fullName: "", shortName: "" });
+      setFormErrors({});
     }
   };
 
@@ -94,8 +116,19 @@ export default function LocationManager() {
 
   const handleSave = async () => {
     if (!editingId) return;
+
+    const result = locationSchema.safeParse(newLocation);
+    if (!result.success) {
+      const errors: Partial<Record<keyof LocationForm, string>> = {};
+      result.error.errors.forEach((err) => {
+        errors[err.path[0] as keyof LocationForm] = err.message;
+      });
+      setFormErrors(errors);
+      return;
+    }
+
     try {
-      const updatedLoc = await updateLocation(editingId, newLocation);
+      const updatedLoc = await updateLocation(editingId, result.data);
       setLocations((prev) =>
         prev.map((loc) => (loc._id === editingId ? updatedLoc : loc))
       );
@@ -106,6 +139,7 @@ export default function LocationManager() {
       setEditingId(null);
       setNewLocation({ address: "", fullName: "", shortName: "" });
       setModalOpen(false);
+      setFormErrors({});
     }
   };
 
@@ -132,27 +166,54 @@ export default function LocationManager() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <Input
-              placeholder="Full Name"
-              value={newLocation.fullName}
-              onChange={(e) =>
-                setNewLocation({ ...newLocation, fullName: e.target.value })
-              }
-            />
-            <Input
-              placeholder="Short Name"
-              value={newLocation.shortName}
-              onChange={(e) =>
-                setNewLocation({ ...newLocation, shortName: e.target.value })
-              }
-            />
-            <Input
-              placeholder="Address"
-              value={newLocation.address}
-              onChange={(e) =>
-                setNewLocation({ ...newLocation, address: e.target.value })
-              }
-            />
+            <div>
+              <Input
+                placeholder="Full Name"
+                value={newLocation.fullName}
+                onChange={(e) => {
+                  setNewLocation({ ...newLocation, fullName: e.target.value });
+                  setFormErrors((prev) => ({ ...prev, fullName: "" }));
+                }}
+              />
+              {formErrors.fullName && (
+                <p className="text-sm text-red-500 mt-1">
+                  {formErrors.fullName}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <Input
+                placeholder="Short Name"
+                value={newLocation.shortName}
+                onChange={(e) => {
+                  setNewLocation({ ...newLocation, shortName: e.target.value });
+                  setFormErrors((prev) => ({ ...prev, shortName: "" }));
+                }}
+              />
+              {formErrors.shortName && (
+                <p className="text-sm text-red-500 mt-1">
+                  {formErrors.shortName}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <Input
+                placeholder="Address"
+                value={newLocation.address}
+                onChange={(e) => {
+                  setNewLocation({ ...newLocation, address: e.target.value });
+                  setFormErrors((prev) => ({ ...prev, address: "" }));
+                }}
+              />
+              {formErrors.address && (
+                <p className="text-sm text-red-500 mt-1">
+                  {formErrors.address}
+                </p>
+              )}
+            </div>
+
             <Button
               onClick={editingId ? handleSave : handleAdd}
               className="w-full"

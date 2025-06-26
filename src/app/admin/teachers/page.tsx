@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/table";
 import axios from "@/lib/axios";
 import { toast } from "sonner";
+import AddTeacherForm from "@/components/AddTeacherForm";
 
 interface Teacher {
   _id?: string;
@@ -37,10 +38,10 @@ export default function TeacherManager() {
   const [modalTeacher, setModalTeacher] = useState<
     Omit<Teacher, "profile_url">
   >({
-    name: "",
-    address: "",
-    educationalDetail: "",
-    description: "",
+    name: "kunal",
+    address: "UDR",
+    educationalDetail: "BCA",
+    description: "GOODD TEACHER!",
   });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -60,13 +61,14 @@ export default function TeacherManager() {
   }, []);
 
   const handleSave = async () => {
+    debugger;
     const formData = new FormData();
     formData.append("name", modalTeacher.name);
     formData.append("address", modalTeacher.address);
     formData.append("educationalDetail", modalTeacher.educationalDetail);
     formData.append("description", modalTeacher.description);
     if (fileInputRef.current?.files?.[0]) {
-      formData.append("file", fileInputRef.current.files[0]);
+      formData.append("photo", fileInputRef.current.files[0]);
     }
 
     try {
@@ -126,46 +128,12 @@ export default function TeacherManager() {
             <DialogHeader>
               <DialogTitle>Add Teacher</DialogTitle>
             </DialogHeader>
-            <form className="space-y-4" encType="multipart/form-data">
-              <Input
-                placeholder="Name"
-                value={modalTeacher.name}
-                onChange={(e) =>
-                  setModalTeacher({ ...modalTeacher, name: e.target.value })
-                }
-              />
-              <Input
-                placeholder="Address"
-                value={modalTeacher.address}
-                onChange={(e) =>
-                  setModalTeacher({ ...modalTeacher, address: e.target.value })
-                }
-              />
-              <Input
-                placeholder="Educational Detail"
-                value={modalTeacher.educationalDetail}
-                onChange={(e) =>
-                  setModalTeacher({
-                    ...modalTeacher,
-                    educationalDetail: e.target.value,
-                  })
-                }
-              />
-              <Textarea
-                placeholder="Description"
-                value={modalTeacher.description}
-                onChange={(e) =>
-                  setModalTeacher({
-                    ...modalTeacher,
-                    description: e.target.value,
-                  })
-                }
-              />
-              <Input type="file" ref={fileInputRef} accept="image/*" />
-              <Button type="button" onClick={handleSave}>
-                Save
-              </Button>
-            </form>
+            <AddTeacherForm
+              onAdd={(teacher) => {
+                setTeachers((prev) => [...prev, teacher]);
+                toast.success("Teacher added");
+              }}
+            />
           </DialogContent>
         </Dialog>
       </div>
