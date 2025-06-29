@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/table";
 import axios from "@/lib/axios";
 import { toast } from "sonner";
-import AddTeacherForm from "@/components/AddTeacherForm";
+// import AddTeacherForm from "@/components/AddTeacherForm";
 
 interface Teacher {
   _id?: string;
