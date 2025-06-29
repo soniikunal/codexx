@@ -13,14 +13,18 @@ import {
   MessageCircleCode,
   Users2Icon,
   LucideBookCopy,
+  BadgeDollarSign,
+  LucideClipboardSignature,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "./ui/button";
 
 const menuItems = [
-  { name: "Users", href: "/admin/users", icon: Users },
+  { name: "Users", href: "/admin/subscription", icon: Users },
+  { name: "Leads", href: "/admin/contact-entries", icon: LucideClipboardSignature },
   { name: "Programs", href: "/admin/programs", icon: LucideBookCopy },
   { name: "Teachers", href: "/admin/teachers", icon: Users2Icon },
+  { name: "Membership", href: "/admin/membership", icon: BadgeDollarSign },
   { name: "Locations", href: "/admin/locations", icon: LocateIcon },
   {
     name: "Testimonials",

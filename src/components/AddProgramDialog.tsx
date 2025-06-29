@@ -1,6 +1,6 @@
 "use client";
 
-import { Dispatch, SetStateAction } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -66,6 +66,30 @@ export default function AddProgramDialog({
   setFile,
   editingIndex,
 }: AddProgramDialogProps) {
+  const [teachers, setTeachers] = useState<{ _id: string; name: string }[]>([]);
+  const [locations, setLocations] = useState<
+    { _id: string; fullName: string }[]
+  >([]);
+  useEffect(() => {
+    const fetchDropdownData = async () => {
+      try {
+        const [teacherRes, locationRes] = await Promise.all([
+          fetch("/api/teacher"), // adjust if your path is different
+          fetch("/api/locations"),
+        ]);
+
+        const teacherData = await teacherRes.json();
+        const locationData = await locationRes.json();
+
+        setTeachers(teacherData);
+        setLocations(locationData);
+      } catch (error) {
+        console.error("Failed to fetch dropdown data", error);
+      }
+    };
+
+    fetchDropdownData();
+  }, []);
   return (
     <Dialog open={!!modalProgram} onOpenChange={() => setModalProgram(null)}>
       <DialogContent className="w-full max-w-5xl">
@@ -323,7 +347,7 @@ export default function AddProgramDialog({
               <Label className="font-semibold">Locations</Label>
               {modalProgram.location.map((loc, idx) => (
                 <div key={idx} className="grid grid-cols-4 gap-2">
-                  <div className="space-y-1">
+                  {/* <div className="space-y-1">
                     <Label>Name</Label>
                     <Input
                       value={loc.name}
@@ -336,7 +360,30 @@ export default function AddProgramDialog({
                         });
                       }}
                     />
+                  </div> */}
+                  <div className="space-y-1">
+                    <Label>Location</Label>
+                    <select
+                      value={loc.name}
+                      onChange={(e) => {
+                        const updated = [...modalProgram.location];
+                        updated[idx].name = e.target.value;
+                        setModalProgram({
+                          ...modalProgram,
+                          location: updated,
+                        });
+                      }}
+                      className="border rounded px-3 py-2 text-xs w-full"
+                    >
+                      <option value="">Select Location</option>
+                      {locations.map((l) => (
+                        <option key={l._id} value={l.fullName}>
+                          {l.fullName}
+                        </option>
+                      ))}
+                    </select>
                   </div>
+
                   <div className="space-y-1">
                     <Label>Start Date</Label>
                     <Input
@@ -367,7 +414,7 @@ export default function AddProgramDialog({
                       }}
                     />
                   </div>
-                  <div className="space-y-1">
+                  {/* <div className="space-y-1">
                     <Label>Instructor</Label>
                     <Input
                       value={loc.instructor}
@@ -380,6 +427,28 @@ export default function AddProgramDialog({
                         });
                       }}
                     />
+                  </div> */}
+                  <div className="space-y-1">
+                    <Label>Instructor</Label>
+                    <select
+                      value={loc.instructor}
+                      onChange={(e) => {
+                        const updated = [...modalProgram.location];
+                        updated[idx].instructor = e.target.value;
+                        setModalProgram({
+                          ...modalProgram,
+                          location: updated,
+                        });
+                      }}
+                      className="border rounded px-3 py-2 text-xs w-full"
+                    >
+                      <option value="">Select Instructor</option>
+                      {teachers.map((t) => (
+                        <option key={t._id} value={t.name}>
+                          {t.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               ))}

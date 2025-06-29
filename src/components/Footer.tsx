@@ -4,12 +4,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  FaFacebookF,
-  FaInstagram,
-  FaLinkedinIn,
-  FaArrowUp,
-} from "react-icons/fa";
 import Link from "next/link";
 import Image from "next/image";
 export default function Footer() {
@@ -75,29 +69,6 @@ export default function Footer() {
             />
             <Button className="cta">Subscribe</Button>
           </div>
-          <div className="flex  gap-4 text-xl mt-4">
-            <a
-              //   href="https://facebook.com"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <FaFacebookF className="hover:text-blue-600" />
-            </a>
-            <a
-              //   href="https://instagram.com"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <FaInstagram className="hover:text-pink-500" />
-            </a>
-            <a
-              //   href="https://linkedin.com"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <FaLinkedinIn className="hover:text-blue-800" />
-            </a>
-          </div>
         </div>
       </div>
 
@@ -115,14 +86,7 @@ export default function Footer() {
       </div>
 
       {/* Scroll to Top Button */}
-      {showScrollTop && (
-        <button
-          onClick={scrollToTop}
-          className="fixed bottom-6 right-6 bg-gray-700 text-white p-3 rounded-full shadow hover:bg-black transition cursor-pointer"
-        >
-          <FaArrowUp />
-        </button>
-      )}
+    
     </footer>
   );
 }

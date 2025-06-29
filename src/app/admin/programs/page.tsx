@@ -23,8 +23,6 @@ import AddProgramDialog from "@/components/AddProgramDialog";
 import { toast } from "sonner";
 import axios from "@/lib/axios";
 
-const PK_OPTIONS = ["PROG_SCIENCE", "PROG_MATH", "PROG_CODING"];
-
 interface LocationEntry {
   name: string;
   startDate: string;
@@ -182,7 +180,7 @@ export default function ProgramManager() {
   });
 
   return (
-    <div className="p-4">
+    <div className="p-2">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-xl font-bold">Manage Programs</h1>
         <Dialog>
