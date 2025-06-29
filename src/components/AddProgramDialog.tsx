@@ -33,6 +33,7 @@ interface Schedule {
 }
 
 export interface Program {
+  _id?: string;
   pk: string;
   courseName: string;
   ageRange: string;
@@ -46,30 +47,31 @@ export interface Program {
   maxEnrollment: string;
   startDate: string;
   endDate: string;
-  inPerson: string;
-  remote: string;
+  inPerson: Boolean;
+  remote: Boolean;
 }
 
 interface AddProgramDialogProps {
   modalProgram: Program | null;
   setModalProgram: Dispatch<SetStateAction<Program | null>>;
-  onSave: () => void;
-  // triggerButton: React.ReactNode;
+  onSave: (e: React.FormEvent) => void;
+  setFile: (file: File) => void;
+  editingIndex: Number | null;
 }
 
 export default function AddProgramDialog({
   modalProgram,
   setModalProgram,
   onSave,
-  // triggerButton,
+  setFile,
+  editingIndex,
 }: AddProgramDialogProps) {
   return (
     <Dialog open={!!modalProgram} onOpenChange={() => setModalProgram(null)}>
-      {/* <DialogTrigger asChild>{triggerButton}</DialogTrigger> */}
       <DialogContent className="w-full max-w-5xl">
         <DialogHeader>
           <DialogTitle>
-            {modalProgram ? "Add Program" : "Edit Program"}
+            {editingIndex === null ? "Add Program" : "Edit Program"}
           </DialogTitle>
         </DialogHeader>
 
@@ -148,7 +150,7 @@ export default function AddProgramDialog({
               <Label>Start Date</Label>
               <Input
                 type="date"
-                value={modalProgram.startDate}
+                value={modalProgram.startDate?.slice(0, 10)}
                 onChange={(e) =>
                   setModalProgram({
                     ...modalProgram,
@@ -162,7 +164,7 @@ export default function AddProgramDialog({
               <Label>End Date</Label>
               <Input
                 type="date"
-                value={modalProgram.endDate}
+                value={modalProgram.endDate?.slice(0, 10)}
                 onChange={(e) =>
                   setModalProgram({
                     ...modalProgram,
@@ -228,11 +230,11 @@ export default function AddProgramDialog({
                   <input
                     type="radio"
                     value="true"
-                    checked={modalProgram.inPerson === "true"}
-                    onChange={(e) =>
+                    checked={modalProgram.inPerson === true}
+                    onChange={() =>
                       setModalProgram({
                         ...modalProgram,
-                        inPerson: e.target.value,
+                        inPerson: true,
                       })
                     }
                   />
@@ -242,13 +244,13 @@ export default function AddProgramDialog({
                   <input
                     type="radio"
                     value="false"
-                    checked={modalProgram.inPerson === "false"}
-                    onChange={(e) =>
+                    checked={modalProgram.inPerson === false}
+                    onChange={() => {
                       setModalProgram({
                         ...modalProgram,
-                        inPerson: e.target.value,
-                      })
-                    }
+                        inPerson: false,
+                      });
+                    }}
                   />
                   N
                 </label>
@@ -261,11 +263,11 @@ export default function AddProgramDialog({
                   <input
                     type="radio"
                     value="true"
-                    checked={modalProgram.remote === "true"}
-                    onChange={(e) =>
+                    checked={modalProgram.remote === true}
+                    onChange={() =>
                       setModalProgram({
                         ...modalProgram,
-                        remote: e.target.value,
+                        remote: true,
                       })
                     }
                   />
@@ -275,11 +277,11 @@ export default function AddProgramDialog({
                   <input
                     type="radio"
                     value="false"
-                    checked={modalProgram.remote === "false"}
-                    onChange={(e) =>
+                    checked={modalProgram.remote === false}
+                    onChange={() =>
                       setModalProgram({
                         ...modalProgram,
-                        remote: e.target.value,
+                        remote: false,
                       })
                     }
                   />
@@ -302,15 +304,17 @@ export default function AddProgramDialog({
             </div>
 
             <div className="space-y-2">
-              <Label>Thumbnail Image URL</Label>
+              <Label>Upload Thumbnail Image</Label>
               <Input
-                value={modalProgram.thumbnailImage}
-                onChange={(e) =>
-                  setModalProgram({
-                    ...modalProgram,
-                    thumbnailImage: e.target.value,
-                  })
-                }
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setModalProgram((prev) => prev);
+                    setFile(file);
+                  }
+                }}
               />
             </div>
 
@@ -337,7 +341,7 @@ export default function AddProgramDialog({
                     <Label>Start Date</Label>
                     <Input
                       type="date"
-                      value={loc.startDate}
+                      value={loc.startDate?.slice(0, 10)}
                       onChange={(e) => {
                         const updated = [...modalProgram.location];
                         updated[idx].startDate = e.target.value;
@@ -352,7 +356,7 @@ export default function AddProgramDialog({
                     <Label>End Date</Label>
                     <Input
                       type="date"
-                      value={loc.endDate}
+                      value={loc.endDate?.slice(0, 10)}
                       onChange={(e) => {
                         const updated = [...modalProgram.location];
                         updated[idx].endDate = e.target.value;

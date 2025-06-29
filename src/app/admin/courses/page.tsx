@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -9,8 +9,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
   TableBody,
@@ -20,9 +18,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Pencil, Trash2 } from "lucide-react";
-import { Label } from "@/components/ui/label";
 import Image from "next/image";
 import AddProgramDialog from "@/components/AddProgramDialog";
+import { toast } from "sonner";
+import axios from "@/lib/axios";
 
 const PK_OPTIONS = ["PROG_SCIENCE", "PROG_MATH", "PROG_CODING"];
 
@@ -44,6 +43,7 @@ interface Schedule {
 }
 
 interface Program {
+  _id?: string;
   pk: string;
   courseName: string;
   ageRange: string;
@@ -57,8 +57,8 @@ interface Program {
   maxEnrollment: string;
   startDate: string;
   endDate: string;
-  inPerson: string;
-  remote: string;
+  inPerson: Boolean;
+  remote: Boolean;
 }
 
 export default function ProgramManager() {
@@ -68,23 +68,89 @@ export default function ProgramManager() {
   const [confirmDeleteIndex, setConfirmDeleteIndex] = useState<number | null>(
     null
   );
+  const [file, setFile] = useState<File | null>(null);
 
-  const handleSave = () => {
-    if (!modalProgram) return;
-    const updated = [...programs];
-    if (editingIndex !== null) {
-      updated[editingIndex] = modalProgram;
-    } else {
-      updated.push(modalProgram);
+  const fetchCourses = async () => {
+    try {
+      const res = await axios.get("/program");
+      setPrograms(res.data);
+    } catch (err) {
+      toast.error("Failed to fetch Courses");
     }
-    setPrograms(updated);
-    setModalProgram(null);
-    setEditingIndex(null);
   };
 
-  const handleDelete = () => {
-    if (confirmDeleteIndex !== null) {
-      setPrograms(programs.filter((_, i) => i !== confirmDeleteIndex));
+  useEffect(() => {
+    fetchCourses();
+  }, []);
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!modalProgram) return;
+    if (!file) {
+      alert("Please select a thumbnail image!");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("pk", modalProgram.pk);
+    formData.append("courseName", modalProgram.courseName);
+    formData.append("ageRange", modalProgram.ageRange);
+    formData.append("description", modalProgram.description);
+    formData.append("headerTitle", modalProgram.headerTitle);
+    formData.append("program", modalProgram.program);
+    formData.append("status", modalProgram.status);
+    formData.append("inPerson", JSON.stringify(modalProgram.inPerson));
+    formData.append("remote", JSON.stringify(modalProgram.remote));
+    formData.append("maxEnrollment", modalProgram.maxEnrollment);
+    formData.append(
+      "startDate",
+      new Date(modalProgram.startDate).toISOString()
+    );
+    formData.append("endDate", new Date(modalProgram.endDate).toISOString());
+    formData.append("photo", file); // attach actual File object
+
+    // Stringify location and schedule arrays/objects
+    formData.append("location", JSON.stringify(modalProgram.location));
+    formData.append("schedule", JSON.stringify(modalProgram.schedule));
+
+    try {
+      if (editingIndex !== null) {
+        // Update existing program
+        await axios.put(`/program/?id=${modalProgram._id}`, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        toast.success("Program updated");
+      } else {
+        // Add new program
+        await axios.post("/program", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        toast.success("Program added");
+      }
+      fetchCourses();
+      setModalProgram(null);
+      setEditingIndex(null);
+      setFile(null);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to save program");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (confirmDeleteIndex === null) return;
+
+    const programToDelete = programs[confirmDeleteIndex];
+    const id = programToDelete._id;
+
+    try {
+      await axios.delete(`/program?id=${id}`);
+      toast.success("Program deleted");
+      fetchCourses();
+    } catch (error) {
+      console.error("Delete failed:", error);
+      toast.error("Failed to delete program");
+    } finally {
       setConfirmDeleteIndex(null);
     }
   };
@@ -111,8 +177,8 @@ export default function ProgramManager() {
     maxEnrollment: "",
     startDate: "",
     endDate: "",
-    inPerson: "Y",
-    remote: "N",
+    inPerson: true,
+    remote: true,
   });
 
   return (
@@ -136,22 +202,15 @@ export default function ProgramManager() {
         modalProgram={modalProgram}
         setModalProgram={setModalProgram}
         onSave={handleSave}
-        // triggerButton={
-        //   <Button
-        //     onClick={() => {
-        //       setModalProgram(initializeProgram());
-        //       setEditingIndex(null);
-        //     }}
-        //   >
-        //     Add Program
-        //   </Button>
-        // }
+        setFile={setFile}
+        editingIndex={editingIndex}
       />
 
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Course</TableHead>
+             <TableHead>Thumbnail</TableHead>
             <TableHead>Age Range</TableHead>
             <TableHead>Program</TableHead>
             <TableHead>Actions</TableHead>
@@ -161,6 +220,13 @@ export default function ProgramManager() {
           {programs.map((program, index) => (
             <TableRow key={index}>
               <TableCell>{program.courseName}</TableCell>
+              <TableCell>
+                  <img
+                    src={program.thumbnailImage}
+                    alt={program.courseName}
+                    className="w-12 h-12 rounded-full object-cover"
+                  />
+                </TableCell>
               <TableCell>{program.ageRange}</TableCell>
               <TableCell>{program.program}</TableCell>
               <TableCell className="flex gap-2">
