@@ -1,4 +1,3 @@
-// components/Sidebar.tsx
 "use client";
 
 import Link from "next/link";
@@ -7,23 +6,27 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
   Users,
-  Package,
   LogOut,
   ChevronLeft,
   ChevronRight,
   LocateIcon,
   MessageCircleCode,
   Users2Icon,
+  LucideBookCopy,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "./ui/button";
 
 const menuItems = [
-  { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
   { name: "Users", href: "/admin/users", icon: Users },
+  { name: "Programs", href: "/admin/programs", icon: LucideBookCopy },
   { name: "Teachers", href: "/admin/teachers", icon: Users2Icon },
   { name: "Locations", href: "/admin/locations", icon: LocateIcon },
-  { name: "Testimonials", href: "/admin/testimonials", icon: MessageCircleCode },
+  {
+    name: "Testimonials",
+    href: "/admin/testimonials",
+    icon: MessageCircleCode,
+  },
 ];
 
 export default function Sidebar() {
@@ -53,7 +56,7 @@ export default function Sidebar() {
             href={href}
             className={cn(
               "flex items-center gap-3 p-2 rounded hover:bg-gray-100 transition",
-              pathname.startsWith(href) && "bg-gray-200 font-semibold"
+              pathname?.startsWith(href) && "bg-gray-200 font-semibold"
             )}
           >
             <Icon className="w-5 h-5" />

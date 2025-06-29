@@ -70,7 +70,7 @@ export default function ProgramManager() {
   );
   const [file, setFile] = useState<File | null>(null);
 
-  const fetchCourses = async () => {
+  const fetchPrograms = async () => {
     try {
       const res = await axios.get("/program");
       setPrograms(res.data);
@@ -80,7 +80,7 @@ export default function ProgramManager() {
   };
 
   useEffect(() => {
-    fetchCourses();
+    fetchPrograms();
   }, []);
 
   const handleSave = async (e: React.FormEvent) => {
@@ -127,7 +127,7 @@ export default function ProgramManager() {
         });
         toast.success("Program added");
       }
-      fetchCourses();
+      fetchPrograms();
       setModalProgram(null);
       setEditingIndex(null);
       setFile(null);
@@ -146,7 +146,7 @@ export default function ProgramManager() {
     try {
       await axios.delete(`/program?id=${id}`);
       toast.success("Program deleted");
-      fetchCourses();
+      fetchPrograms();
     } catch (error) {
       console.error("Delete failed:", error);
       toast.error("Failed to delete program");
