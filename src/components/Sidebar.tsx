@@ -20,7 +20,7 @@ import { useState } from "react";
 import { Button } from "./ui/button";
 
 const menuItems = [
-  { name: "Users", href: "/admin/subscription", icon: Users },
+  { name: "Enrollments", href: "/admin/enrollments", icon: Users },
   { name: "Leads", href: "/admin/contact-entries", icon: LucideClipboardSignature },
   { name: "Programs", href: "/admin/programs", icon: LucideBookCopy },
   { name: "Teachers", href: "/admin/teachers", icon: Users2Icon },
