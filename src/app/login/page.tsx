@@ -4,8 +4,11 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import axios from "@/lib/axios";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -15,12 +18,12 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // Dummy auth logic for now
-      if (email === "admin@example.com" && password === "admin123") {
-        toast.success("Login successful");
-        // Redirect to dashboard or store token
+      const res = await axios.post("/auth/login", { email, password });
+      if (res.data.success == true) {
+        toast.success(res.data.message);
+        router.push("/admin/enrollments");
       } else {
-        toast.error("Invalid credentials");
+        toast.error("Invalid credentials !");
       }
     } catch (err) {
       toast.error("Something went wrong");

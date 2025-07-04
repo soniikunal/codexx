@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
-  LayoutDashboard,
   Users,
   LogOut,
   ChevronLeft,
@@ -18,10 +17,17 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "./ui/button";
+import axios from "@/lib/axios";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 const menuItems = [
   { name: "Enrollments", href: "/admin/enrollments", icon: Users },
-  { name: "Leads", href: "/admin/contact-entries", icon: LucideClipboardSignature },
+  {
+    name: "Leads",
+    href: "/admin/contact-entries",
+    icon: LucideClipboardSignature,
+  },
   { name: "Programs", href: "/admin/programs", icon: LucideBookCopy },
   { name: "Teachers", href: "/admin/teachers", icon: Users2Icon },
   { name: "Membership", href: "/admin/membership", icon: BadgeDollarSign },
@@ -36,6 +42,21 @@ const menuItems = [
 export default function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+
+  const router = useRouter();
+
+  const handleLogOut = async () => {
+    try {
+      const res = await axios.post("/auth/logout");
+      toast(res.data.message);
+
+      if (res.data.success) {
+        router.push("/login");
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || "Logout failed");
+    }
+  };
 
   return (
     <aside
@@ -68,7 +89,10 @@ export default function Sidebar() {
           </Link>
         ))}
 
-        <button className="mt-auto flex items-center gap-2 text-sm text-red-600 px-2 py-2 hover:bg-red-50 rounded">
+        <button
+          className="mt-auto flex items-center gap-2 text-sm text-red-600 px-2 py-2 hover:bg-red-50 rounded cursor-pointer"
+          onClick={handleLogOut}
+        >
           <LogOut className="w-4 h-4" />
           {!collapsed && "Logout"}
         </button>
